@@ -30,7 +30,7 @@ def detectHeadLines(filename):
 
         if(not noVerticalLine):
             # 有 | 符号,说明这里是注释
-            # afterFixList.append("> "+line)
+            afterFixList.append("> "+line)
             pass
         elif(spaceCount == 0):
             oneTitleNum += 1
