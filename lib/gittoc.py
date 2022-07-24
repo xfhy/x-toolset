@@ -1,4 +1,6 @@
+# coding=UTF-8
 import sys
+import os
 
 
 headline_dic = {'#': 0, '##': 1, '###': 2, '####': 3, '#####': 4, '######': 5}
@@ -13,7 +15,7 @@ def writefile(fp, str=None):
         f.write(str)
 
 
-def detectHeadLines(f):
+def detectHeadLines(f,realName):
     '''detact headline and return inserted string.
     params:
         f: Markdown file
@@ -77,12 +79,9 @@ def detectHeadLines(f):
         else:
             org_str += line
 
-    # 真实的文件名
-    realFileName = f.name.split('.')[0].split('\\')[-1]
-
     # 前缀
     prefix = ''
-    prefix += realFileName
+    prefix += realName
     prefix += '\n'
     prefix += '---'
     prefix += '\r\n'
@@ -100,12 +99,23 @@ def detectHeadLines(f):
     return insert_str + org_str
 
 
+def find_last(string, str):
+    last_position = -1
+    while True:
+        position = string.find(str, last_position+1)
+        if position == -1:
+            return last_position
+        last_position = position
+
+
 if __name__ == '__main__':
 
     filename = sys.argv[1]
-    print(filename)
+    fullName = os.path.basename(filename)
+    realName = fullName[:find_last(fullName, ".")]
+    print(realName)
     f = open(filename, 'r', encoding='utf-8')
-    insert_str = detectHeadLines(f)
+    insert_str = detectHeadLines(f,realName)
     f.close()
-    with open('{}_with_toc.md'.format(filename[:filename.find('.')]), 'w', encoding='utf-8') as f:
+    with open('{}_with_toc.md'.format(realName), 'w', encoding='utf-8') as f:
         f.write(insert_str)
