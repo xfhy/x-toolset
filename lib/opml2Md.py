@@ -2,7 +2,6 @@
 import sys
 import opml
 
-
 # author xfhy
 # 2021年1月18日
 # 将幕布思维导图导出成opml，然后将其转成markdown并标上序号.
@@ -37,7 +36,7 @@ def recu(outline, hCount, spaceCount):
 
         #  第一个层级的标题#个数为2，我设定的
         if hCount == 2:
-            preText = createRepeatStr("#", hCount) + " "
+            preText = createRepeatStr("#", hCount) + " " + str(i + 1) + ". "
         else:
             if hCount == 3:
                 preText = "- "
@@ -67,6 +66,7 @@ def writeContent2File(filename):
     with open(filename + ".md", 'w', encoding='UTF-8') as f:
         for line in lineList:
             f.write(line + "\n")
+
 
 if __name__ == '__main__':
     filename = sys.argv[1]
