@@ -12,9 +12,9 @@
 
 ### 将幕布思维导图转成markdown并标上序号
 
-[addNumber源码](/lib/addNumber.py)
+[MindConvert源码](/lib/MindConvert.py)
 
-使用方式: `python addNumber.py a.md`
+使用方式: `python MindConvert.py a.md`
 
 ### 为markdown标题添加序号
 
