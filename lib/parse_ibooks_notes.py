@@ -4,6 +4,22 @@ import re
 import os
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
+from collections import OrderedDict
+
+
+class Note:
+    def __init__(self, title: str, underlined_sentences_dict: OrderedDict):
+        """
+        title: 标题
+        underlined_sentences: 划线句(key:划线句 value: 注释)
+        """
+        self.title = title
+        self.underlined_sentences_dict = underlined_sentences_dict
+
+
+def write_body_to_file(body: str):
+    with open("temp_body.txt", "w") as file:
+        file.write(body)
 
 
 def parse_eml(eml_fp, attr_dir):
@@ -67,6 +83,7 @@ def parse_eml(eml_fp, attr_dir):
                 if "text/plain" in par["content-type"]:  # 文本正文
                     body = par.get_payload(decode=True).decode(text_char)
                     print("邮件正文：", body)
+                    write_body_to_file(body)
                 else:
                     # html格式正文
                     # html_body = par.get_payload(decode=True).decode(text_char)
@@ -76,8 +93,132 @@ def parse_eml(eml_fp, attr_dir):
             print("-" * 60)
 
 
+def modeling_data():
+    od = OrderedDict()
+    note = Note("", OrderedDict())
+    title = ""
+
+    with open("temp_body.txt", "r") as file:
+        lines = file.readlines()
+        index = 0
+        length = len(lines)
+        while index < length:
+            line = lines[index]
+            if str(line).strip() == "":
+                index += 1
+                continue
+            if line.startswith("笔记摘自"):
+                # 标题
+                has_value_index = find_next_has_value_line(lines, index)
+                if has_value_index != -1:
+                    title = lines[has_value_index].strip()
+                    print("标题:" + title)
+                    index = has_value_index + 1
+                    continue
+            elif is_date_at_start(line):
+                # 划线句
+                has_value_index = find_next_has_value_line(lines, index)
+                if has_value_index != -1:
+                    underlined_sentences = lines[has_value_index].strip()
+                    print("划线句:" + underlined_sentences)
+                    # 找到 关于划线句的注释
+                    next_date_at_start_index = find_next_date_at_start(lines, has_value_index)
+                    if next_date_at_start_index != -1 and next_date_at_start_index < length and next_date_at_start_index != (
+                            has_value_index + 1):
+                        # 取出has_value_index到next_date_at_start_index的所有行
+                        underlined_sentences_comment = lines[has_value_index + 1:next_date_at_start_index]
+                        # 找到注释
+                        for e in underlined_sentences_comment:
+                            if e.strip() != "":
+                                print("注释:" + e)
+                        index = next_date_at_start_index
+                        continue
+                    elif next_date_at_start_index == -1:
+                        end_index = find_end(lines, has_value_index)
+                        if end_index != -1:
+                            # 取出has_value_index到end_index的所有行
+                            underlined_sentences_comment = lines[has_value_index + 1:end_index]
+                            # 找到注释
+                            for e in underlined_sentences_comment:
+                                if e.strip() != "":
+                                    print("注释:" + e)
+                            index = end_index
+                            continue
+
+            index += 1
+
+
+def find_next_date_at_start(lines, index):
+    """
+    寻找下一个日期开始的line的index
+    """
+    index = index + 1
+    while index < len(lines):
+        line = lines[index]
+        if is_date_at_start(line):
+            return index
+        index += 1
+    return -1
+
+
+def find_end(lines, index):
+    """
+    寻找结束的line的index
+    """
+    index = index + 1
+    while index < len(lines):
+        line = lines[index]
+        if str(line).strip() == "":
+            index += 1
+            continue
+        if line.startswith("所有摘录来自"):
+            return index
+        index += 1
+    return -1
+
+
+def is_date_at_start(string):
+    """
+    匹配日期的开始
+    """
+    # 正则表达式匹配 YYYY年M月D日
+    # \d 表示数字，{4}表示重复4次，{1,2}表示重复1到2次
+    # ^ 表示匹配字符串开头
+    pattern = r'^\d{4}年\d{1,2}月\d{1,2}日'
+
+    # 使用re.match来检查字符串开头是否匹配正则表达式
+    if re.match(pattern, string):
+        return True
+    return False
+
+
+def find_next_has_value_line(lines, index):
+    """
+    寻找下一个有值的行
+    """
+    index = index + 1
+    while index < len(lines):
+        line = lines[index]
+        if str(line).strip() == "":
+            index += 1
+            continue
+        if len(line) > 0:
+            return index
+        index += 1
+    return -1
+
+
+def generate_note():
+    pass
+
+
 if __name__ == '__main__':
     eml_path = sys.argv[1]
     print("开始处理文件: " + eml_path)
     parse_eml(eml_path, "./")
+    print("处理完成,开始建模")
+    modeling_data()
+    print("开始生成笔记")
+    generate_note()
+    os.remove("temp_body.txt")
     print("处理完成")
