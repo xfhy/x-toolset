@@ -94,9 +94,8 @@ def parse_eml(eml_fp, attr_dir):
 
 
 def modeling_data():
-    od = OrderedDict()
-    note = Note("", OrderedDict())
-    title = ""
+    underlined_sentences_dict = OrderedDict()
+    note = Note("", underlined_sentences_dict)
 
     with open("temp_body.txt", "r") as file:
         lines = file.readlines()
@@ -112,7 +111,8 @@ def modeling_data():
                 has_value_index = find_next_has_value_line(lines, index)
                 if has_value_index != -1:
                     title = lines[has_value_index].strip()
-                    print("标题:" + title)
+                    # print("标题:" + title)
+                    note.title = title
                     index = has_value_index + 1
                     continue
             elif is_date_at_start(line):
@@ -120,7 +120,8 @@ def modeling_data():
                 has_value_index = find_next_has_value_line(lines, index)
                 if has_value_index != -1:
                     underlined_sentences = lines[has_value_index].strip()
-                    print("划线句:" + underlined_sentences)
+                    underlined_sentences_dict[underlined_sentences] = []
+                    # print("划线句:" + underlined_sentences)
                     # 找到 关于划线句的注释
                     next_date_at_start_index = find_next_date_at_start(lines, has_value_index)
                     if next_date_at_start_index != -1 and next_date_at_start_index < length and next_date_at_start_index != (
@@ -130,7 +131,8 @@ def modeling_data():
                         # 找到注释
                         for e in underlined_sentences_comment:
                             if e.strip() != "":
-                                print("注释:" + e)
+                                # print("注释:" + e)
+                                underlined_sentences_dict[underlined_sentences].append(e)
                         index = next_date_at_start_index
                         continue
                     elif next_date_at_start_index == -1:
@@ -141,11 +143,13 @@ def modeling_data():
                             # 找到注释
                             for e in underlined_sentences_comment:
                                 if e.strip() != "":
-                                    print("注释:" + e)
+                                    # print("注释:" + e)
+                                    underlined_sentences_dict[underlined_sentences].append(e)
                             index = end_index
                             continue
 
             index += 1
+    return note
 
 
 def find_next_date_at_start(lines, index):
@@ -208,7 +212,30 @@ def find_next_has_value_line(lines, index):
     return -1
 
 
-def generate_note():
+def generate_note(note: Note):
+    """
+    生成笔记
+    """
+    # 生成note.title的markdown文件
+    file_path = note.title + "_笔记.md"
+    content = ""
+    for key, value in note.underlined_sentences_dict.items():
+        content += "- " + key
+        if not key.__contains__("\n"):
+            content += "\n"
+        for v in value:
+            content += "> "
+            if len(value) > 1:
+                content += "- "
+            content += v
+            if not v.__contains__("\n"):
+                content += "\n"
+
+    # 打开文件，模式"w"表示写入模式，如果文件已存在则会被覆盖
+    with open(file_path, "w") as file:
+        # 将内容写入文件
+        file.write(content)
+
     pass
 
 
@@ -217,8 +244,8 @@ if __name__ == '__main__':
     print("开始处理文件: " + eml_path)
     parse_eml(eml_path, "./")
     print("处理完成,开始建模")
-    modeling_data()
+    note = modeling_data()
     print("开始生成笔记")
-    generate_note()
+    generate_note(note)
     os.remove("temp_body.txt")
     print("处理完成")
